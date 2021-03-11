@@ -324,6 +324,9 @@ class Resizer
         $filepointer = null;
 
         if (is_string($file)) {
+            if (strpos(strtolower($file), '.gif') === false) {
+                return false;
+            }
             $filepointer = fopen($file, "rb");
         } else {
             $filepointer = $file;
