@@ -293,6 +293,15 @@ class Resizer
 
         $imageAdapter = $this->imageAdapterFactory->create();
         $imageAdapter->open($this->getAbsolutePathOriginal());
+        if ($this->resizeSettings['watermark'] && file_exists($this->resizeSettings['watermark']['imagePath'])) {
+            $imageAdapter->watermark(
+                $this->resizeSettings['watermark']['imagePath'],
+                $this->resizeSettings['watermark']['x'] ?? null,
+                $this->resizeSettings['watermark']['y'] ?? null,
+                $this->resizeSettings['watermark']['opacity'] ?? null,
+                $this->resizeSettings['watermark']['tile'] ?? null
+            );
+        }
         $imageAdapter->constrainOnly($this->resizeSettings['constrainOnly']);
         $imageAdapter->keepAspectRatio($this->resizeSettings['keepAspectRatio']);
         $imageAdapter->keepTransparency($this->resizeSettings['keepTransparency']);
@@ -315,6 +324,9 @@ class Resizer
         $filepointer = null;
 
         if (is_string($file)) {
+            if (strpos(strtolower($file), '.gif') === false) {
+                return false;
+            }
             $filepointer = fopen($file, "rb");
         } else {
             $filepointer = $file;
