@@ -3,7 +3,7 @@
   "description": "Magento 2 Module to add simple image resizing capabilities in all blocks and .phtml templates",
   "version": "2.1.0",
   "require": {
-    "php": "^7.0"
+    "php": "^7.0|~8.1.0"
   },
   "type": "magento2-module",
   "license": [
