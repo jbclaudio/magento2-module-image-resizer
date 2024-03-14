@@ -1,27 +1,52 @@
 {
-  "name": "staempfli/magento2-module-image-resizer",
-  "description": "Magento 2 Module to add simple image resizing capabilities in all blocks and .phtml templates",
-  "version": "2.1.0",
-  "require": {
-    "php": "^7.0|~8.1.0"
-  },
-  "type": "magento2-module",
-  "license": [
-    "OSL-3.0",
-    "AFL-3.0"
-  ],
-  "authors": [
-    {
-      "name": "Juan Alonso",
-      "email": "juan.alonso@staempfli.com"
-    }
-  ],
-  "autoload": {
-    "files": [
-      "registration.php"
+    "name": "staempfli/magento2-module-image-resizer",
+    "description": "Magento 2 Module to add simple image resizing capabilities in all blocks and .phtml templates",
+    "version": "3.0.0",
+    "require": {
+        "php": ">=8.2",
+        "magento/framework": ">=103.0.6",
+        "magento/module-backend": ">=102.0.6"
+    },
+    "require-dev": {
+        "bitexpert/phpstan-magento": "^0.11.0",
+        "magento/magento-coding-standard": "^33.0",
+        "phpstan/phpstan": "^1.10",
+        "rector/rector": "^0.17.13"
+    },
+    "type": "magento2-module",
+    "license": [
+        "OSL-3.0",
+        "AFL-3.0"
     ],
-    "psr-4": {
-      "Staempfli\\ImageResizer\\": ""
+    "authors": [
+        {
+            "name": "Juan Alonso",
+            "email": "juan.alonso@staempfli.com"
+        },
+        {
+            "name": "Claudio Ferraro",
+            "email": "claudio@justbetter.nl"
+        }
+    ],
+    "repositories": {
+        "magento": {
+            "type": "composer",
+            "url": "https://repo-magento-mirror.fooman.co.nz/"
+        }
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Staempfli\\ImageResizer\\": ""
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "magento/composer-dependency-version-audit-plugin": true,
+            "php-http/discovery": true
+        }
     }
-  }
 }
