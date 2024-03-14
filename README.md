@@ -3,14 +3,16 @@
 
 Magento 2 Module to add simple image resizing capabilities in all blocks and .phtml templates
 
-## Installation
 
+## Fork Update Notice
+This fork continues the development of the original module by Staempfli, which has not been maintained for several years. The primary goal of this fork is to ensure compatibility with PHP 8.2 and Magento 2.4.6, reflecting the latest requirements and standards. Feel free to use and contribute to the enhancements made here.
+
+## Installation
 ```
 $ composer require "staempfli/magento2-module-image-resizer":"~2.0"
 ```
 
 ## Usage
-
 `imageResizer` is automatically available in all frontend Blocks.
 You can resize your images just calling a method:
 
@@ -23,7 +25,6 @@ $resizedImageUrl = $imageResizer->resizeAndGetUrl(<originalImageUrl>, $width, $h
 You can do that directly on the .phtml or in your custom Block.
 
 ## Cache
-
 Resized images are saved in cache to improve performance. That way, if an image was already resized, we just use the one in cache.
 
 If you need to, you can clear the resized images cache on the Admin Cache Management
@@ -31,12 +32,10 @@ If you need to, you can clear the resized images cache on the Admin Cache Manage
 ![Admin Clear Resized Images Cache](docs/img/admin-clear-cache.png "Clear Resized Images Cache")
 
 ## Prerequisites
-
-- PHP >= 7.0.*
-- Magento >= 2.1.*
+- PHP >= 8.2.*
+- Magento >= 2.4.6
 
 ## Resize Settings
-
 The folowing is a list of the resize settings that can be set:
 | Name | Default | Type |
 | --- | --- | --- |

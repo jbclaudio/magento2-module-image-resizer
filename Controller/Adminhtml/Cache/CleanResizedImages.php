@@ -1,71 +1,61 @@
 <?php
-/**
- * CleanResizedImages
- *
- * @copyright Copyright (c) 2016 Staempfli AG
- * @author    juan.alonso@staempfli.com
- */
 
 namespace Staempfli\ImageResizer\Controller\Adminhtml\Cache;
 
+use Exception;
 use Magento\Backend\App\Action\Context;
-use Magento\Backend\Controller\Adminhtml\Cache as MagentoAdminCache;
+use Magento\Backend\Controller\Adminhtml\Cache;
 use Magento\Backend\Model\View\Result\Redirect;
 use Magento\Framework\App\Cache\Frontend\Pool;
 use Magento\Framework\App\Cache\StateInterface;
 use Magento\Framework\App\Cache\TypeListInterface;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\View\Result\PageFactory;
 use Staempfli\ImageResizer\Model\Cache as ResizerCache;
 
-class CleanResizedImages extends MagentoAdminCache
+class CleanResizedImages extends Cache
 {
-    /**
-     * @var ResizerCache
-     */
-    protected $resizerCache;
+    protected ManagerInterface $eventManager;
 
-    /**
-     * CleanResizedImages constructor.
-     * @param ResizerCache $resizerCache
-     * @param Context $context
-     * @param TypeListInterface $cacheTypeList
-     * @param StateInterface $cacheState
-     * @param Pool $cacheFrontendPool
-     * @param PageFactory $resultPageFactory
-     */
+    protected $messageManager;
+
     public function __construct(
-        ResizerCache $resizerCache,
+        protected ResizerCache $resizerCache,
         Context $context,
         TypeListInterface $cacheTypeList,
         StateInterface $cacheState,
         Pool $cacheFrontendPool,
         PageFactory $resultPageFactory
     ) {
-        parent::__construct($context, $cacheTypeList, $cacheState, $cacheFrontendPool, $resultPageFactory);
-        $this->resizerCache = $resizerCache;
+        $this->eventManager = $context->getEventManager();
+        $this->messageManager = $context->getMessageManager();
+
+        parent::__construct(
+            $context,
+            $cacheTypeList,
+            $cacheState,
+            $cacheFrontendPool,
+            $resultPageFactory
+        );
     }
 
     /**
      * Clean JS/css files cache
-     *
-     * @return Redirect
      */
-    public function execute()
+    public function execute(): Redirect
     {
         try {
             $this->resizerCache->clearResizedImagesCache();
-            $this->_eventManager->dispatch('staempfli_imageresizer_clean_images_cache_after');
+            $this->eventManager->dispatch('staempfli_imageresizer_clean_images_cache_after');
             $this->messageManager->addSuccessMessage(__('The resized images cache was cleaned.'));
-        } catch (LocalizedException $e) {
-            $this->messageManager->addErrorMessage($e->getMessage());
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->messageManager->addExceptionMessage($e, __('An error occurred while clearing the resized images cache.'));
         }
 
         /** @var Redirect $resultRedirect */
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+
         return $resultRedirect->setPath('adminhtml/cache');
     }
 }

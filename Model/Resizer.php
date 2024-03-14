@@ -1,62 +1,22 @@
 <?php
-/**
- * Resizer
- *
- * @copyright Copyright (c) 2016 Staempfli AG
- * @author    juan.alonso@staempfli.com
- */
 
 namespace Staempfli\ImageResizer\Model;
 
+use Exception;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem;
-use Magento\Framework\Image\AdapterFactory as imageAdapterFactory;
+use Magento\Framework\Filesystem\Io\File;
+use Magento\Framework\Image\AdapterFactory as ImageAdapterFactory;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\Filesystem\Io\File;
 use Psr\Log\LoggerInterface;
 
 class Resizer
 {
+    public const IMAGE_RESIZER_DIR = 'staempfli_imageresizer';
+    public const IMAGE_RESIZER_CACHE_DIR = self::IMAGE_RESIZER_DIR . '/' . DirectoryList::CACHE;
+
     /**
-     * constant IMAGE_RESIZER_DIR
-     */
-    const IMAGE_RESIZER_DIR = 'staempfli_imageresizer';
-    /**
-     * constant IMAGE_RESIZER_CACHE_DIR
-     */
-    const IMAGE_RESIZER_CACHE_DIR = self::IMAGE_RESIZER_DIR . '/' . DirectoryList::CACHE;
-    /**
-     * @var imageAdapterFactory
-     */
-    protected $imageAdapterFactory;
-    /**
-     * @var array
-     */
-    protected $resizeSettings = [];
-    /**
-     * @var string
-     */
-    protected $relativeFilename;
-    /**
-     * @var int
-     */
-    protected $width;
-    /**
-     * @var int
-     */
-    protected $height;
-    /**
-     * @var Filesystem\Directory\WriteInterface
-     */
-    protected $mediaDirectoryRead;
-    /**
-     * @var StoreManagerInterface
-     */
-    protected $storeManager;
-    /**
-     * @var array
-     *
      * - constrainOnly[true]: Guarantee, that image picture will not be bigger, than it was. It is false by default.
      * - keepAspectRatio[true]: Guarantee, that image picture width/height will not be distorted. It is true by default.
      * - keepTransparency[true]: Guarantee, that image will not lose transparency if any. It is true by default.
@@ -64,7 +24,7 @@ class Resizer
      * if keepAspectRatio(false).
      * - backgroundColor[null]: Default white
      */
-    protected $defaultSettings = [
+    protected array $defaultSettings = [
         'constrainOnly' => true,
         'keepAspectRatio' => true,
         'keepTransparency' => true,
@@ -72,58 +32,39 @@ class Resizer
         'backgroundColor' => null,
         'quality' => 85
     ];
-    /**
-     * @var array
-     */
-    protected $subPathSettingsMapping = [
+
+    protected array $subPathSettingsMapping = [
         'constrainOnly' => 'co',
         'keepAspectRatio' => 'ar',
         'keepTransparency' => 'tr',
         'keepFrame' => 'fr',
         'backgroundColor' => 'bc',
     ];
-    /**
-     * @var File
-     */
-    protected $fileIo;
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
 
-    /**
-     * Resizer constructor.
-     * @param Filesystem $filesystem
-     * @param ImageAdapterFactory $imageAdapterFactory
-     * @param StoreManagerInterface $storeManager
-     * @param File $fileIo
-     * @param LoggerInterface $logger
-     */
+    protected array $resizeSettings = [];
+
+    protected string $relativeFilename;
+
+    protected int $width;
+
+    protected int $height;
+
+    protected Filesystem\Directory\WriteInterface|Filesystem\Directory\ReadInterface $mediaDirectoryRead;
+
     public function __construct(
         Filesystem $filesystem,
-        imageAdapterFactory $imageAdapterFactory,
-        StoreManagerInterface $storeManager,
-        File $fileIo,
-        LoggerInterface $logger
+        protected ImageAdapterFactory $imageAdapterFactory,
+        protected StoreManagerInterface $storeManager,
+        protected File $fileIo,
+        protected LoggerInterface $logger
     ) {
-        $this->imageAdapterFactory = $imageAdapterFactory;
         $this->mediaDirectoryRead = $filesystem->getDirectoryRead(DirectoryList::MEDIA);
-        $this->storeManager = $storeManager;
-        $this->fileIo = $fileIo;
-        $this->logger = $logger;
     }
 
     /**
-     * Resized image and return url
-     * - Return original image url if no success
-     *
-     * @param string $imageUrl
-     * @param null|int $width
-     * @param null|int $height
-     * @param array $resizeSettings
-     * @return bool|string
+     * Resized image and return url. Return original image url if no success
      */
-    public function resizeAndGetUrl(string $imageUrl, $width, $height, array $resizeSettings = [])
+    public function resizeAndGetUrl(string $imageUrl, ?int $width, ?int $height, array $resizeSettings = []): bool|string
     {
         try {
             // Set $resultUrl with $fileUrl to return this one in case the resize fails.
@@ -140,7 +81,7 @@ class Resizer
 
             $this->initSize($width, $height);
             $this->initResizeSettings($resizeSettings);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->addError("Staempfli_ImageResizer: could not find image: \n" . $e->getMessage());
         }
         try {
@@ -154,7 +95,7 @@ class Resizer
             if ($resizedUrl) {
                 $resultUrl = $resizedUrl;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->addError("Staempfli_ImageResizer: could not resize image: \n" . $e->getMessage());
         }
 
@@ -163,10 +104,8 @@ class Resizer
 
     /**
      * Prepare and set resize settings for image
-     *
-     * @param array $resizeSettings
      */
-    protected function initResizeSettings(array $resizeSettings)
+    protected function initResizeSettings(array $resizeSettings): void
     {
         // Init resize settings with default
         $this->resizeSettings = $this->defaultSettings;
@@ -180,29 +119,20 @@ class Resizer
 
     /**
      * Init relative filename from original image url to resize
-     *
-     * @param string $imageUrl
-     * @return bool|mixed|string
      */
-    protected function initRelativeFilenameFromUrl(string $imageUrl)
+    protected function initRelativeFilenameFromUrl(string $imageUrl): void
     {
         $this->relativeFilename = false; // reset filename in case there was another value defined
         $mediaUrl = $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
-        $mediaPath = parse_url($mediaUrl, PHP_URL_PATH);
+        $mediaPath = parse_url((string) $mediaUrl, PHP_URL_PATH);
         $imagePath = parse_url($imageUrl, PHP_URL_PATH);
 
-        if (0 === strpos($imagePath, $mediaPath)) {
+        if (str_starts_with($imagePath, $mediaPath)) {
             $this->relativeFilename = substr_replace($imagePath, '', 0, strlen($mediaPath));
         }
     }
 
-    /**
-     * Init resize dimensions
-     *
-     * @param null|int $width
-     * @param null|int $height
-     */
-    protected function initSize($width, $height)
+    protected function initSize(?int $width, ?int $height): void
     {
         $this->width = $width;
         $this->height = $height;
@@ -213,10 +143,8 @@ class Resizer
      *
      * In order to have unique folders depending on setting, we use the following logic:
      *      - <width>x<height>_[co]_[ar]_[tr]_[fr]_[quality]
-     *
-     * @return string
      */
-    protected function getResizeSubFolderName()
+    protected function getResizeSubFolderName(): string
     {
         $subPath = $this->width . "x" . $this->height;
         foreach ($this->resizeSettings as $key => $value) {
@@ -224,17 +152,15 @@ class Resizer
                 $subPath .= "_" . $this->subPathSettingsMapping[$key];
             }
         }
+
         return sprintf('%s_%s',$subPath, $this->resizeSettings['quality']);
     }
 
     /**
      * Get relative path where the resized image is saved
-     *
      * In order to have unique paths, we use the original image path plus the ResizeSubFolderName.
-     *
-     * @return string
      */
-    protected function getRelativePathResizedImage()
+    protected function getRelativePathResizedImage(): string
     {
         $pathInfo = $this->fileIo->getPathInfo($this->relativeFilename);
         $relativePathParts = [
@@ -243,35 +169,21 @@ class Resizer
             $this->getResizeSubFolderName(),
             $pathInfo['basename']
         ];
+
         return implode('/', $relativePathParts);
     }
 
-    /**
-     * Get absolute path from original image
-     *
-     * @return string
-     */
-    protected function getAbsolutePathOriginal()
+    protected function getAbsolutePathOriginal(): string
     {
         return $this->mediaDirectoryRead->getAbsolutePath($this->relativeFilename);
     }
 
-    /**
-     * Get absolute path from resized image
-     *
-     * @return string
-     */
-    protected function getAbsolutePathResized()
+    protected function getAbsolutePathResized(): string
     {
         return $this->mediaDirectoryRead->getAbsolutePath($this->getRelativePathResizedImage());
     }
 
-    /**
-     * Get url of resized image
-     *
-     * @return bool|string
-     */
-    protected function getResizedImageUrl()
+    protected function getResizedImageUrl(): bool|string
     {
         $relativePath = $this->getRelativePathResizedImage();
         if ($this->mediaDirectoryRead->isFile($relativePath)) {
@@ -281,11 +193,9 @@ class Resizer
     }
 
     /**
-     * Resize and save new generated image
-     *
-     * @return bool
+     * @throws Exception
      */
-    protected function resizeAndSaveImage()
+    protected function resizeAndSaveImage(): bool
     {
         if (!$this->mediaDirectoryRead->isFile($this->relativeFilename)) {
             return false;
@@ -310,50 +220,45 @@ class Resizer
         $imageAdapter->quality($this->resizeSettings['quality']);
         $imageAdapter->resize($this->width, $this->height);
         $imageAdapter->save($this->getAbsolutePathResized());
+
         return true;
     }
 
     /**
      * Detects animated GIF from given file pointer resource or filename.
-     *
-     * @param resource|string $file File pointer resource or filename
-     * @return bool
      */
-    protected function isAnimatedGif($file)
+    protected function isAnimatedGif(string $file): bool
     {
-        $filepointer = null;
-
         if (is_string($file)) {
-            if (strpos(strtolower($file), '.gif') === false) {
+            if (!str_contains(strtolower($file), '.gif')) {
                 return false;
             }
-            $filepointer = fopen($file, "rb");
+            $filePointer = fopen($file, "rb");
         } else {
-            $filepointer = $file;
+            $filePointer = $file;
             /* Make sure that we are at the beginning of the file */
-            fseek($filepointer, 0);
+            fseek($filePointer, 0);
         }
 
-        if (fread($filepointer, 3) !== "GIF") {
-            fclose($filepointer);
+        if (fread($filePointer, 3) !== "GIF") {
+            fclose($filePointer);
 
             return false;
         }
 
         $frames = 0;
 
-        while (!feof($filepointer) && $frames < 2) {
-            if (fread($filepointer, 1) === "\x00") {
+        while (!feof($filePointer) && $frames < 2) {
+            if (fread($filePointer, 1) === "\x00") {
                 /* Some of the animated GIFs do not contain graphic control extension (starts with 21 f9) */
-                if (fread($filepointer, 1) === "\x21" || fread($filepointer, 2) === "\x21\xf9") {
+                if (fread($filePointer, 1) === "\x21" || fread($filePointer, 2) === "\x21\xf9") {
                     $frames++;
                 }
             }
         }
 
-        fclose($filepointer);
+        fclose($filePointer);
 
         return $frames > 1;
     }
-
 }

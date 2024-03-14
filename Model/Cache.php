@@ -1,36 +1,28 @@
 <?php
-/**
- * Cache
- *
- * @copyright Copyright (c) 2016 Staempfli AG
- * @author    juan.alonso@staempfli.com
- */
 
 namespace Staempfli\ImageResizer\Model;
 
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem;
 
 class Cache
 {
-    /**
-     * @var Filesystem\Directory\WriteInterface
-     */
-    protected $mediaDirectory;
+    protected Filesystem\Directory\WriteInterface $mediaDirectory;
 
     /**
-     * Cache constructor.
-     * @param Filesystem $filesystem
+     * @throws FileSystemException
      */
-    public function __construct(Filesystem $filesystem)
-    {
+    public function __construct(
+        Filesystem $filesystem
+    ) {
         $this->mediaDirectory = $filesystem->getDirectoryWrite(DirectoryList::MEDIA);
     }
 
     /**
-     * Delete Image resizer cache dir
+     * @throws FileSystemException
      */
-    public function clearResizedImagesCache()
+    public function clearResizedImagesCache(): void
     {
         $this->mediaDirectory->delete(Resizer::IMAGE_RESIZER_CACHE_DIR);
     }
